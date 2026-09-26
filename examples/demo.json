@@ -1,0 +1,356 @@
+{
+  "records": [
+    {
+      "type": "comment",
+      "text": "妈妈的处女是我的啦[打call][doge][doge][喜欢]",
+      "time": "2026-01-01T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "1",
+        "id": "1"
+      }
+    },
+    {
+      "type": "video",
+      "text": "妈妈的第一次属于我[喜欢]",
+      "time": "2026-01-04T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "2",
+        "id": "2"
+      }
+    },
+    {
+      "type": "live",
+      "text": "我想睡你[doge][喜欢]",
+      "time": "2026-01-07T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "3",
+        "id": "3"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "你的处女是我的啦",
+      "time": "2026-01-10T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "4",
+        "id": "4"
+      }
+    },
+    {
+      "type": "video",
+      "text": "给我看你的内裤[打call]",
+      "time": "2026-01-13T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "5",
+        "id": "5"
+      }
+    },
+    {
+      "type": "live",
+      "text": "我很喜欢这个音乐视频[喜欢]",
+      "time": "2026-01-16T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "6",
+        "id": "6"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "处女座今天有什么特点",
+      "time": "2026-01-19T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "7",
+        "id": "7"
+      }
+    },
+    {
+      "type": "video",
+      "text": "这是他的处女作电影",
+      "time": "2026-01-22T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "8",
+        "id": "8"
+      }
+    },
+    {
+      "type": "live",
+      "text": "猫咪发情期需要怎么照顾，求科普",
+      "time": "2026-01-25T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "9",
+        "id": "9"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "支持反对性骚扰的倡议",
+      "time": "2026-01-28T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "10",
+        "id": "10"
+      }
+    },
+    {
+      "type": "video",
+      "text": "你这个废物，谢谢[喜欢]",
+      "time": "2026-01-31T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "11",
+        "id": "11"
+      }
+    },
+    {
+      "type": "live",
+      "text": "你就是个傻 逼[doge]",
+      "time": "2026-02-03T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "12",
+        "id": "12"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "不要骂他废物",
+      "time": "2026-02-06T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "13",
+        "id": "13"
+      }
+    },
+    {
+      "type": "video",
+      "text": "不要网暴他，你这个废物",
+      "time": "2026-02-09T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "14",
+        "id": "14"
+      }
+    },
+    {
+      "type": "live",
+      "text": "不要开盒他",
+      "time": "2026-02-12T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "15",
+        "id": "15"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "开盒他，大家一起去骂",
+      "time": "2026-02-15T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "16",
+        "id": "16"
+      }
+    },
+    {
+      "type": "video",
+      "text": "弄死你",
+      "time": "2026-02-18T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "17",
+        "id": "17"
+      }
+    },
+    {
+      "type": "live",
+      "text": "你可真是个天才，呵呵",
+      "time": "2026-02-21T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "18",
+        "id": "18"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "女人都是垃圾",
+      "time": "2026-02-24T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "19",
+        "id": "19"
+      }
+    },
+    {
+      "type": "video",
+      "text": "男的都该死",
+      "time": "2026-02-27T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "20",
+        "id": "20"
+      }
+    },
+    {
+      "type": "live",
+      "text": "原批都是垃圾",
+      "time": "2026-03-02T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "21",
+        "id": "21"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "原神玩家都是脑残",
+      "time": "2026-03-05T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "22",
+        "id": "22"
+      }
+    },
+    {
+      "type": "video",
+      "text": "原神这个关卡设计不好",
+      "time": "2026-03-08T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "23",
+        "id": "23"
+      }
+    },
+    {
+      "type": "live",
+      "text": "王者荣耀这次更新我不喜欢",
+      "time": "2026-03-11T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "24",
+        "id": "24"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "支持轰炸平民城市",
+      "time": "2026-03-14T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "25",
+        "id": "25"
+      }
+    },
+    {
+      "type": "video",
+      "text": "反对支持轰炸平民城市",
+      "time": "2026-03-17T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "26",
+        "id": "26"
+      }
+    },
+    {
+      "type": "live",
+      "text": "讨论政府教育政策",
+      "time": "2026-03-20T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "27",
+        "id": "27"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "外地人都是低等人",
+      "time": "2026-03-23T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "28",
+        "id": "28"
+      }
+    },
+    {
+      "type": "video",
+      "text": "谢谢老师讲解数学",
+      "time": "2026-03-26T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "29",
+        "id": "29"
+      }
+    },
+    {
+      "type": "live",
+      "text": "主播加油，音乐很好听",
+      "time": "2026-03-29T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "30",
+        "id": "30"
+      }
+    },
+    {
+      "type": "comment",
+      "text": "这个游戏的开源代码很有意思",
+      "time": "2026-04-01T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "31",
+        "id": "31"
+      }
+    },
+    {
+      "type": "video",
+      "text": "daily vlog 的美食记录",
+      "time": "2026-04-04T12:00:00+08:00",
+      "context": "合成演示语境",
+      "reference": "",
+      "raw": {
+        "rpid": "32",
+        "id": "32"
+      }
+    }
+  ]
+}
