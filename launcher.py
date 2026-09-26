@@ -8,7 +8,7 @@ def main():
         from aicu.gui import MainWindow
         window = MainWindow()
         try:
-            window.update_idletasks()
+            window.update()
         finally:
             window.destroy()
         return 0

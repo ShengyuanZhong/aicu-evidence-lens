@@ -1,14 +1,16 @@
-# Aicu Evidence Lens · 发言观察 v2.1.1
+# Aicu Evidence Lens · 发言观察 v2.2.0
 
 这是一个本地运行的公开发言分析工具。输入 UID，采集 Aicu 评论、视频弹幕、直播弹幕；逐条保存原文与来源；标注需要核查的表达并生成交互报告。Windows 用户可以使用发布页的打包程序；从源码运行需要 Python 3.10+，日常使用不需要第三方 Python 包。
 
 ## Windows 桌面版
 
-1. 从 [Releases](https://github.com/ShengyuanZhong/aicu-evidence-lens/releases) 下载 `AicuEvidenceLens-windows-x64.zip`，完整解压后双击其中的 `AicuEvidenceLens.exe`。
-2. 输入 Bilibili UID，选择报告目录，点击“开始分析”。也可以选已有 `.json` / `.jsonl` 数据文件，或点击“生成演示报告”查看合成样本。
+1. 从 [Releases](https://github.com/ShengyuanZhong/aicu-evidence-lens/releases) 下载当前版本的 `AicuEvidenceLens-v2.2.0-windows-x64.zip`，完整解压后双击其中的 `AicuEvidenceLens.exe`。
+2. 在“开始分析”页输入 Bilibili UID，选择报告目录，点击“开始分析”。切换到“导入本地文件”可使用已有 `.json` / `.jsonl` 数据；点击“查看演示”可以先体验合成样本。
 3. 完成后点击“打开报告”。报告与原始记录保存在所选目录下的 `<UID>` 子文件夹。
 
-“模型配置”区可开启逐条语义审核，填写完整 Chat Completions URL、模型名称与 API Key，并先点“测试模型连接”。密钥只在当前进程内使用，不写入设置文件。开启后，发言原文与取得的来源上下文会发送给所填服务。没有模型时保持离线检索模式；报告会区分待核查、未审核与模型判断。
+“模型配置”页可开启逐条语义审核，填写完整 Chat Completions URL、模型名称与 API Key，点击“测试连接”确认可用，再点“保存配置”。密钥可临时显示，但只在当前进程内使用，不写入设置文件。开启后，发言原文与取得的来源上下文会发送给所填服务。没有模型时保持离线检索模式；报告会区分待核查、未审核与模型判断。
+
+界面分为“开始分析、模型配置、运行记录”三个页面。表单支持滚动，底部状态和操作按钮固定可见，按钮在禁用和悬停状态下仍显示完整文字。任务在后台运行，日志分批刷新并保留向上滚动的位置；连接测试会阻止重复提交。快捷键：`Ctrl+Enter` 开始分析，`Ctrl+S` 保存配置。
 
 界面可设置每类采集页数、来源核查上限、模型最多审核条数，运行时可停止并保存已取得的数据。报告里有两个独立圆环：**内容分区**仅显示话题，**负面表达筛选**仅显示风险类别。扇区面积、条形长度和百分比按本图标签计数计算；点击标签可联动证据，两个圆环的筛选可叠加。
 
@@ -91,7 +93,7 @@ python -m pip install "pyinstaller>=6.22,<7"
 .\build_windows.ps1
 ```
 
-生成的文件是 `dist/AicuEvidenceLens-windows-x64.zip`。打包脚本将报告的本地 CSS、JavaScript 和合成演示数据一并包含；构建产物与用户报告已在 `.gitignore` 中排除。
+生成的文件是 `dist/AicuEvidenceLens-v2.2.0-windows-x64.zip`。每次构建使用独立暂存目录，避免已打开的程序锁定旧构建产物。打包脚本将报告的本地 CSS、JavaScript 和合成演示数据一并包含；构建产物与用户报告已在 `.gitignore` 中排除。
 
 ## 项目结构与验证
 
