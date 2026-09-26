@@ -193,7 +193,7 @@ class MainWindow(tk.Tk):
                 "use_model": self.use_model.get(), "max_pages": int(self.max_pages.get()), "source_limit": int(self.source_limit.get()),
                 "llm_record_limit": int(self.llm_record_limit.get())}
 
-    def _options(self, demo=False):
+    def _job_options(self, demo=False):
         settings = self._settings()
         if min(settings["max_pages"], settings["source_limit"], settings["llm_record_limit"]) < 0:
             raise ValueError("页数、来源上限和模型审核上限不能为负数")
@@ -217,7 +217,7 @@ class MainWindow(tk.Tk):
         if self.worker and self.worker.is_alive():
             return
         try:
-            options = self._options(demo)
+            options = self._job_options(demo)
             write_settings(options)
         except (ValueError, OSError) as exc:
             messagebox.showerror("无法开始", str(exc), parent=self)

@@ -3,12 +3,26 @@ import json
 import tempfile
 import threading
 import unittest
+import tkinter as tk
 from pathlib import Path
 
-from aicu.gui import read_settings, run_job, write_settings
+from aicu.gui import MainWindow, read_settings, run_job, write_settings
 
 
 class DesktopWorkflowTests(unittest.TestCase):
+    def test_window_constructs_and_accepts_configuration(self):
+        try:
+            window = MainWindow()
+        except tk.TclError as exc:
+            self.skipTest(f"图形环境不可用：{exc}")
+        try:
+            window.configure(bg="#edf2f7")
+            window.update_idletasks()
+            self.assertEqual(window.title(), "Aicu 发言观察")
+            self.assertEqual(window._job_options(demo=True)["uid"], "demo")
+        finally:
+            window.destroy()
+
     def test_settings_never_persist_api_key(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp) / "settings.json"

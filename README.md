@@ -1,4 +1,4 @@
-# Aicu Evidence Lens · 发言观察 v2.1
+# Aicu Evidence Lens · 发言观察 v2.1.1
 
 这是一个本地运行的公开发言分析工具。输入 UID，采集 Aicu 评论、视频弹幕、直播弹幕；逐条保存原文与来源；标注需要核查的表达并生成交互报告。Windows 用户可以使用发布页的打包程序；从源码运行需要 Python 3.10+，日常使用不需要第三方 Python 包。
 

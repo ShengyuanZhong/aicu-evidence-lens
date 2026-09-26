@@ -4,6 +4,14 @@ import sys
 
 
 def main():
+    if sys.argv[1:] == ["--self-test-gui"]:
+        from aicu.gui import MainWindow
+        window = MainWindow()
+        try:
+            window.update_idletasks()
+        finally:
+            window.destroy()
+        return 0
     if len(sys.argv) > 1:
         # Windowed PyInstaller builds have no console streams.
         if sys.stdout is None:

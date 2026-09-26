@@ -1,2 +1,2 @@
 """Aicu Evidence Lens: collection, contextual review and local reports."""
-__version__ = "2.1.0"
+__version__ = "2.1.1"
