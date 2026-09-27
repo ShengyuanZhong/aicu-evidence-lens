@@ -1,6 +1,7 @@
 """Settings and background jobs used by the desktop interface."""
 import json
 import os
+import webbrowser
 from pathlib import Path
 from .cli import load_input
 from .collector import collect
@@ -24,10 +25,22 @@ def read_settings(path=None):
 def write_settings(value, path=None):
     target = path or config_file()
     target.parent.mkdir(parents=True, exist_ok=True)
-    safe = {k: value[k] for k in ("output", "model_url", "model_name", "use_model", "max_pages", "source_limit", "llm_record_limit") if k in value}
+    safe = {k: value[k] for k in ("output", "model_url", "model_name", "use_model", "max_pages", "source_limit", "llm_record_limit", "check_space", "space_limit") if k in value}
     tmp = target.with_suffix(".tmp")
     tmp.write_text(json.dumps(safe, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(target)
+
+
+def open_local_report(path):
+    path = Path(path).resolve()
+    if not path.is_file():
+        raise FileNotFoundError("报告文件不存在，请重新生成。")
+    if os.name == "nt":
+        # ShellExecute accepts the native path, preserving spaces and Chinese.
+        # webbrowser's Windows Edge command can lose the file URI argument.
+        os.startfile(str(path))
+    elif not webbrowser.open(path.as_uri()):
+        raise OSError("系统未找到可打开报告的浏览器。")
 
 
 def run_job(options, progress, cancel):
@@ -48,7 +61,8 @@ def run_job(options, progress, cancel):
         for record in records:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
     report = run_pipeline(uid, records, coverage, directory, client=client, source_limit=0 if options["demo"] else options["source_limit"],
-                          llm_limit=options["llm_record_limit"], progress=progress, cancel=cancel, demo=options["demo"])
+                          llm_limit=options["llm_record_limit"], progress=progress, cancel=cancel, demo=options["demo"],
+                          space_limit=options.get("space_limit", 10) if options.get("check_space", True) and not options["demo"] else 0)
     path = directory / "report.html"
     path.write_text(render_report(report), encoding="utf-8")
     return path, report

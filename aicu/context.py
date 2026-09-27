@@ -8,7 +8,7 @@ import urllib.parse
 import urllib.request
 from html.parser import HTMLParser
 
-ALLOWED_HOSTS = {"www.bilibili.com", "api.bilibili.com", "t.bilibili.com", "live.bilibili.com"}
+ALLOWED_HOSTS = {"www.bilibili.com", "api.bilibili.com", "t.bilibili.com", "live.bilibili.com", "space.bilibili.com"}
 
 
 def allowed_url(url):
@@ -115,6 +115,8 @@ class ContextFetcher:
             if not isinstance(payload, dict):
                 raise ValueError("来源接口格式不正确")
             if payload.get("code") != 0 or not isinstance(payload.get("data"), dict):
+                if payload.get("code") in (-101, -111, -352, -412, -509):
+                    self.blocked.add(host)
                 raise ValueError(f"来源接口 code={payload.get('code')}，数据不可用")
             return payload["data"]
         return body.decode("utf-8", "replace")
@@ -149,6 +151,7 @@ class ContextFetcher:
         if record["type"] == "comment" and type_id in {"1", "12", "17"}:
             rpid = str(raw.get("rpid") or "")
             root = str((raw.get("parent") or {}).get("rootid") or rpid)
+            parent_id = str((raw.get("parent") or {}).get("parentid") or root)
             if rpid.isdigit() and root.isdigit():
                 params = urllib.parse.urlencode({"type": type_id, "oid": aid, "root": root, "pn": 1, "ps": 20})
                 url = "https://api.bilibili.com/x/v2/reply/reply?" + params
@@ -167,7 +170,7 @@ class ContextFetcher:
                         result["target_found"] |= is_target
                         role = "queried_author" if is_target else "other_or_unverified_author"
                         if content:
-                            result["conversation"].append({"role": role, "text": content, "rpid": rid, "is_root": rid == root})
+                            result["conversation"].append({"role": role, "text": content, "rpid": rid, "is_root": rid == root, "is_parent": rid == parent_id})
                     result["pages"].append(url)
                 except (RuntimeError, ValueError, OSError) as exc:
                     result["errors"].append("评论上下文：" + str(exc)[:160])

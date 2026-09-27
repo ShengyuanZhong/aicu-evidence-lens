@@ -13,9 +13,15 @@
     return {total,labels:[...counts].map(([id,count])=>({id,count,share:total?count/total:0,coverage:records.length?count/records.length:0})).sort((a,b)=>b.count-a.count||a.id.localeCompare(b.id))};
   }
   function filterRecords(records, filters, catalog) {
-    return records.filter(r=>(filters.source==="all"||r.type===filters.source)&&(filters.status==="all"||r.assessment.status===filters.status)&&(!filters.search||r.text.toLocaleLowerCase().includes(filters.search.toLocaleLowerCase()))&&(!filters.from||(r.time&&r.time.slice(0,10)>=filters.from))&&(!filters.to||(r.time&&r.time.slice(0,10)<=filters.to))&&(!filters.topicTag||tags(r,catalog,"topic").includes(filters.topicTag))&&(!filters.riskTag||tags(r,catalog,"risk").includes(filters.riskTag)));
+    return records.filter(r=>(filters.source==="all"||r.type===filters.source)&&(filters.status==="all"||r.assessment.status===filters.status)&&(!filters.search||r.text.toLocaleLowerCase().includes(filters.search.toLocaleLowerCase()))&&(!filters.from||(r.time&&r.time.slice(0,10)>=filters.from))&&(!filters.to||(r.time&&r.time.slice(0,10)<=filters.to))&&(!filters.topicTag||tags(r,catalog,"topic").includes(filters.topicTag))&&(!filters.riskTag||tags(r,catalog,"risk").includes(filters.riskTag))&&(!filters.topicState||filters.topicState==="all"||(filters.topicState==="pending"&&(r.topic_candidates||[]).length)||(filters.topicState==="labeled"&&(r.topic_labels||[]).length)||(filters.topicState==="unlabeled"&&!(r.topic_labels||[]).length)));
   }
-  const api={aggregate,filterRecords,tags};
+  function spaceStatus(review={}) {
+    if(review.status==="clues_found")return "发现留言线索 · 需核对";
+    if(review.state==="unavailable"||review.status==="unknown")return "无法确认";
+    if(review.status==="no_clues_in_sample")return "已检查样本内未发现线索";
+    return "未检查";
+  }
+  const api={aggregate,filterRecords,tags,spaceStatus};
   if(typeof module!=="undefined"&&module.exports) module.exports=api;
   root.AicuDashboard=api;
   if(typeof document==="undefined") return;
@@ -24,7 +30,7 @@
   const colorMap={};for(const kind of ["topic","risk"]){const palette=kind==="topic"?TOPIC_COLORS:RISK_COLORS;Object.keys(catalog).filter(k=>catalog[k].kind===kind).forEach((k,i)=>{colorMap[k]=palette[i%palette.length];});}
   const $=id=>document.getElementById(id);
   function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
-  const filters={source:"all",status:"all",search:"",from:"",to:"",topicTag:"",riskTag:""};
+  const filters={source:"all",status:"all",search:"",from:"",to:"",topicTag:"",riskTag:"",topicState:"all"};
   let page=0,timer=null,current=[];
   $("subtitle").textContent=(report.demo?"合成演示样本 · 不对应真实账号":"UID "+report.uid)+" · "+report.records.length+" 条记录 · "+report.generated_at.slice(0,10);
   $("mode").textContent=report.mode==="offline"?"离线检索模式":"语义审核模式";
@@ -34,6 +40,33 @@
   $("coverage").append(node("div","来源核查："+report.context_review.attempted+" / "+report.context_review.eligible+" 条候选；已去重或排除空记录 "+report.deduplicated_or_empty+" 条。"));
   if(report.errors.length) $("coverage").append(node("div","模型或流程错误 "+report.errors.length+" 项，详情见 report.json。"));
   $("timeline").max=ordered.length;$("timeline").value=ordered.length;
+  const origins={text:"账号原文",source_hint:"采集来源提示",source_title:"来源标题",source_description:"来源简介",source_area:"来源分区",source_conversation:"评论上下文（可能为其他作者）"};
+  const space=report.space_review||{}, observations=space.observations||[], sc=space.coverage||{};
+  $("space-status").textContent=spaceStatus(space);
+  $("space-meta").textContent="已检查 "+(sc.posts_checked||0)+" 条动态 / "+(sc.comments_checked||0)+" 条留言 · 找到 "+observations.length+" 条线索 · "+({complete:"本次范围检查完成",partial:"部分覆盖",unavailable:"访问不可用",cancelled:"已取消",not_requested:"未启用检查"}[space.state]||"未检查");
+  $("space-caution").textContent="这是有限的公开样本，可能遗漏旧动态、楼中楼、删除或登录后可见的留言。‘标记’‘恍然大悟’也可能有其他含义；来源链接和回复对象需要人工核对。";
+  for(const error of space.errors||[])$("space-errors").append(node("p",error));
+  if(/^[1-9][0-9]{0,19}$/.test(report.uid))$("space-link").href="https://space.bilibili.com/"+report.uid+"/dynamic";else $("space-link").hidden=true;
+  let spacePage=0;
+  function renderSpace(){
+    $("space-evidence").replaceChildren();
+    const max=Math.max(1,Math.ceil(observations.length/15));spacePage=Math.max(0,Math.min(spacePage,max-1));
+    for(const o of observations.slice(spacePage*15,spacePage*15+15)){
+      const card=node("article",undefined,"record");
+      card.append(node("p","其他用户留言 · "+(o.clues||[]).map(c=>c.name).join(" / "),"reason"),node("p",o.text,"record-text"));
+      card.append(node("p",o.target==="owner"?"回复对象：已匹配查询账号的评论":"留言位置：查询账号发布的动态，具体指向需核查","small"));
+      if(o.parent_text)card.append(node("blockquote","所回复内容："+o.parent_text));
+      card.append(node("p",o.interpretation,"small"));
+      if(/^https:\/\/t\.bilibili\.com\/[0-9]+\?comment_on=1&comment_root_id=[0-9]+#reply[0-9]+$/.test(o.source_url||"")){
+        const link=node("a","核查原始留言 ↗");link.href=o.source_url;link.target="_blank";link.rel="noopener noreferrer";card.append(link);
+      }
+      $("space-evidence").append(card);
+    }
+    if(!observations.length)$("space-evidence").append(node("p",space.status==="no_clues_in_sample"?"本次已读取的样本内没有命中线索，不能据此断言从未被家访。":"尚无可用于判断的留言证据。","empty"));
+    $("space-page").textContent=(spacePage+1)+" / "+max;
+    $("space-prev").disabled=spacePage===0;$("space-next").disabled=spacePage===max-1;
+  }
+  $("space-prev").onclick=()=>{spacePage--;renderSpace();};$("space-next").onclick=()=>{spacePage++;renderSpace();};renderSpace();
   function renderEvidence(){
     const max=Math.max(1,Math.ceil(current.length/25));page=Math.min(page,max-1);$("evidence").replaceChildren();
     const sorted=[...current].sort((a,b)=>(b.time||"").localeCompare(a.time||""));
@@ -41,9 +74,11 @@
       const a=r.assessment,card=node("article",undefined,"record");card.id=r.id;
       const head=node("div",undefined,"record-head");head.append(node("span",(TYPES[r.type]||r.type)+" · "+(r.time?r.time.replace("T"," "):"时间未知")+" · "+r.id),node("span",STATES[a.status]||a.status,"status "+a.status));card.append(head,node("p",r.text,"record-text"));
       const ts=node("div",undefined,"tags");for(const k of tags(r,catalog)){const tag=node("span",catalog[k].name,"tag "+catalog[k].kind);ts.append(tag);}card.append(ts,node("p",a.reason,"reason"));
+      for(const e of r.topic_candidates||[])card.append(node("p","待确认话题："+(catalog[e.label]?.name||e.label)+" · "+e.reason,"pending-topic"));
       if(r.source_url){const link=node("a","打开 Bilibili 原始来源 ↗");link.href=r.source_url;link.target="_blank";link.rel="noopener noreferrer";card.append(link);}
       const d=node("details");d.append(node("summary","判断依据与来源上下文"));
       d.append(node("p","判断对象："+a.target+" · 方法："+a.method));for(const e of a.evidence||[])d.append(node("blockquote",e.quote),node("p",e.reason));
+      for(const e of r.topic_evidence||[])d.append(node("p","话题依据 · "+(catalog[e.label]?.name||e.label)+" · "+(origins[e.source]||e.source)),node("blockquote",e.quote),node("p",e.reason,"small"));
       const ctx=r.source_context||{};d.append(node("p","来源状态："+(ctx.state||"not_requested")+(ctx.target_found?" · 已在来源中匹配评论 ID 与账号":"")));
       if(ctx.title)d.append(node("p","标题："+ctx.title));if(ctx.description)d.append(node("p","简介："+ctx.description));
       for(const c of ctx.conversation||[])d.append(node("blockquote",(c.role==="queried_author"?"查询账号：":"其他作者 / 未确认归属：")+c.text));
@@ -82,11 +117,11 @@
     $("evidence-meta").textContent=current.length+" 条记录 · 每页 25 条 · 同一发言可含多个标签";renderEvidence();
   }
   function pause(){if(timer)clearInterval(timer);timer=null;$("play").textContent="▶ 播放";}
-  for(const id of ["source","status","search","from","to"])$(id).addEventListener(id==="search"?"input":"change",()=>{filters[id]=$(id).value;page=0;render();});
+  for(const id of ["source","status","search","from","to","topicState"])$(id).addEventListener(id==="search"?"input":"change",()=>{filters[id]=$(id).value;page=0;render();});
   $("timeline").oninput=()=>{pause();page=0;render();};
   $("play").onclick=()=>{if(timer){pause();return;}if(Number($("timeline").value)>=ordered.length)$("timeline").value=0;$("play").textContent="Ⅱ 暂停";timer=setInterval(()=>{const n=Math.min(ordered.length,Number($("timeline").value)+Math.max(1,Math.ceil(ordered.length/120)));$("timeline").value=n;page=0;render();if(n>=ordered.length)pause();},400);};
   for(const kind of ["topic","risk"])$("clear-"+kind).onclick=()=>{filters[kind==="topic"?"topicTag":"riskTag"]="";page=0;render();};
-  $("reset").onclick=()=>{pause();for(const k of ["source","status"])filters[k]=$(k).value="all";for(const k of ["search","from","to"])filters[k]=$(k).value="";filters.topicTag="";filters.riskTag="";$("timeline").value=ordered.length;page=0;render();};
+  $("reset").onclick=()=>{pause();for(const k of ["source","status","topicState"])filters[k]=$(k).value="all";for(const k of ["search","from","to"])filters[k]=$(k).value="";filters.topicTag="";filters.riskTag="";$("timeline").value=ordered.length;page=0;render();};
   $("prev").onclick=()=>{page--;renderEvidence();};$("next").onclick=()=>{page++;renderEvidence();};
   $("export").onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(current,null,2)],{type:"application/json"}));const a=node("a");a.href=url;a.download="aicu-filtered-records.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   render();

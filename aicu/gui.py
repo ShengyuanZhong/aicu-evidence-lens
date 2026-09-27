@@ -13,7 +13,7 @@ from tkinter import filedialog, ttk
 from tkinter.scrolledtext import ScrolledText
 
 from . import __version__
-from .desktop_service import config_file, read_settings, run_job, write_settings
+from .desktop_service import config_file, read_settings, run_job, write_settings, open_local_report
 from .semantic import ModelClient
 
 BG = "#f3f5f7"
@@ -116,6 +116,8 @@ class MainWindow(tk.Tk):
         self.output = tk.StringVar(value=settings.get("output") or str(Path.home() / "Documents" / "Aicu报告"))
         self.max_pages = tk.StringVar(value=str(settings.get("max_pages", 0)))
         self.source_limit = tk.StringVar(value=str(settings.get("source_limit", 30)))
+        self.check_space = tk.BooleanVar(value=bool(settings.get("check_space", True)))
+        self.space_limit = tk.StringVar(value=str(settings.get("space_limit", 10)))
         self.llm_record_limit = tk.StringVar(value=str(settings.get("llm_record_limit", 0)))
         self.use_model = tk.BooleanVar(value=bool(settings.get("use_model", False)))
         self.model_url = tk.StringVar(value=settings.get("model_url", ""))
@@ -260,12 +262,15 @@ class MainWindow(tk.Tk):
         self.output_entry, _ = self._entry(card, "报告保存目录", self.output, browse=self._choose_output)
         self._check(card, "使用模型进行逐条语义审核", self.use_model).pack(anchor="w")
         self._text(card, variable=self.mode_description, size=9, color=MUTED, wrap=True).pack(fill="x", pady=(0, 9))
+        self._check(card, "检查空间动态留言中的家访迹象", self.check_space).pack(anchor="w")
+        self._text(card, "匿名检查公开留言，单独展示他人留言线索和访问失败情况。", 9, MUTED, wrap=True).pack(fill="x", pady=(0, 9))
         self._button(card, "前往模型配置", lambda: self._switch_page("model"), "quiet").pack(anchor="w")
         self.advanced_button = self._button(card, "展开采集选项", self._toggle_advanced, "quiet")
         self.advanced_button.pack(anchor="w", pady=(14, 0))
         self.advanced_box = tk.Frame(card, bg=WHITE)
         self._entry(self.advanced_box, "每类最多采集页数", self.max_pages, "0 表示全部；限制页数可以减少等待。")
         self._entry(self.advanced_box, "最多核查来源条数", self.source_limit, "默认 30 条；设为 0 可关闭 Bilibili 来源核查。")
+        self._entry(self.advanced_box, "最多核查空间动态数", self.space_limit, "默认 10 条；每条最多 2 页评论，整体最多 40 次请求。0 关闭。")
 
     def _build_model(self, parent):
         self._page_heading(parent, "模型配置", "连接兼容 Chat Completions 的服务，对原文进行语义审核。")
@@ -305,9 +310,14 @@ class MainWindow(tk.Tk):
             self._text(cell, variable=value, size=25, color=ACCENT, bold=True).pack(anchor="w")
             self._text(cell, title, 9, MUTED).pack(anchor="w")
         self._text(card, variable=self.report_path, size=9, color=MUTED, wrap=True).pack(fill="x", pady=(0, 10))
-        self.folder_button = self._button(card, "打开报告目录", self._open_folder)
-        self.folder_button.pack(anchor="w")
+        report_actions = tk.Frame(card, bg=WHITE)
+        report_actions.pack(fill="x")
+        self.folder_button = self._button(report_actions, "打开报告目录", self._open_folder)
+        self.folder_button.pack(side="left")
         self.folder_button.set_enabled(False)
+        self.copy_path_button = self._button(report_actions, "复制报告路径", self._copy_report_path, "quiet")
+        self.copy_path_button.pack(side="left", padx=(10, 0))
+        self.copy_path_button.set_enabled(False)
         card = self._card(parent, "任务日志", "日志自动更新；向上滚动查看时会保持当前位置。")
         self.log = ScrolledText(card, height=11, bg="#f7f9fa", fg="#3d5563",
                                font=(FONT, 10), relief="flat", bd=0, padx=12, pady=12, wrap="word")
@@ -402,6 +412,7 @@ class MainWindow(tk.Tk):
         values = {}
         for key, variable, label in [("max_pages", self.max_pages, "采集页数"),
                                       ("source_limit", self.source_limit, "来源核查上限"),
+                                      ("space_limit", self.space_limit, "空间动态上限"),
                                       ("llm_record_limit", self.llm_record_limit, "模型审核条数")]:
             try:
                 values[key] = int(variable.get().strip())
@@ -412,7 +423,7 @@ class MainWindow(tk.Tk):
         if not self.output.get().strip():
             raise ValueError("请选择报告保存目录。")
         return dict(values, output=self.output.get().strip(), model_url=self.model_url.get().strip(),
-                    model_name=self.model_name.get().strip(), use_model=self.use_model.get())
+                    model_name=self.model_name.get().strip(), use_model=self.use_model.get(), check_space=self.check_space.get())
 
     def _job_options(self, demo=False):
         settings = self._settings()
@@ -538,9 +549,10 @@ class MainWindow(tk.Tk):
         self.last_report = path
         self.report_path.set(str(path))
         self.folder_button.set_enabled(True)
+        self.copy_path_button.set_enabled(True)
         for variable, key in zip(self.metric_values, ["records", "label_assignments", "semantic_reviewed"]):
             variable.set(str(report["stats"][key]))
-        incomplete = bool(report["errors"]) or any(v.get("state") == "error" for v in report["coverage"].values())
+        incomplete = bool(report["errors"] or report.get("space_review", {}).get("errors")) or any(v.get("state") == "error" for v in report["coverage"].values())
         cancelled = report["run_state"] == "cancelled"
         self.status.set("已停止并保存" if cancelled else ("完成，部分请求失败" if incomplete else "报告已生成"))
         self.detail.set("可以打开报告查看结果和数据覆盖情况。")
@@ -592,8 +604,18 @@ class MainWindow(tk.Tk):
         self.detail.set("运行日志已复制。")
 
     def _open(self):
-        if self.last_report and self.last_report.exists():
-            webbrowser.open(self.last_report.resolve().as_uri())
+        if self.last_report:
+            try:
+                open_local_report(self.last_report)
+                self.detail.set("已请求系统打开报告；也可复制路径到浏览器地址栏。")
+            except OSError as exc:
+                self._show_notice("打开报告失败：" + str(exc) + " 可以复制报告路径手动打开。")
+
+    def _copy_report_path(self):
+        if self.last_report:
+            self.clipboard_clear()
+            self.clipboard_append(str(self.last_report.resolve()))
+            self.detail.set("报告路径已复制，可粘贴到浏览器地址栏打开。")
 
     def _open_folder(self):
         if self.last_report and self.last_report.parent.exists():

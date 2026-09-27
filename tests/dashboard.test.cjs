@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {aggregate,filterRecords}=require('../aicu/assets/dashboard.js');
+const {aggregate,filterRecords,spaceStatus}=require('../aicu/assets/dashboard.js');
 const catalog={insult:{kind:'risk'},sexual:{kind:'risk'},game:{kind:'topic'}};
 const records=[{type:'comment',time:'2026-01-01',text:'first',topic_labels:['game'],assessment:{risk_labels:['insult','insult'],status:'suspected'}},{type:'video',time:'2026-02-01',text:'second',topic_labels:[],assessment:{risk_labels:['sexual'],status:'suspected'}}];
 const result=aggregate(records,catalog);
@@ -15,6 +15,11 @@ filters.riskTag='sexual';assert.equal(filterRecords(records,filters,catalog).len
 const more=aggregate([...records,records[1]],catalog);
 assert.equal(more.labels.find(x=>x.id==='sexual').share,.5);
 console.log('Dashboard count, share, scope, dedup and filter checks passed.');
+assert.equal(spaceStatus({state:'unavailable',status:'unknown'}),'无法确认');
+assert.equal(spaceStatus({state:'partial',status:'clues_found'}),'发现留言线索 · 需核对');
+const pendingRecords=[{...records[0],topic_candidates:[{label:'politics'}]},records[1]];
+assert.equal(filterRecords(pendingRecords,{source:'all',status:'all',topicState:'pending'},catalog).length,1);
+assert.equal(aggregate(pendingRecords,catalog,'topic').total,1);
 
 // Exercise the UI controller with a minimal DOM double (no browser/network).
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
@@ -27,7 +32,7 @@ class Element {
 }
 const uiCatalog={insult:{kind:'risk',name:'辱骂'},sexual:{kind:'risk',name:'性化表达'},game:{kind:'topic',name:'游戏'}};
 const uiRecords=records.map((r,i)=>({...r,id:'r_'+i,assessment:{...r.assessment,model_checked:false,reason:'test',target:'unknown',method:'rules',evidence:[]},source_context:{state:'not_requested'},audit:[],errors:[]}));
-const report={uid:'demo',demo:true,generated_at:'2026-01-01',mode:'offline',catalog:uiCatalog,records:uiRecords,coverage:{},context_review:{attempted:0,eligible:2},deduplicated_or_empty:0,errors:[]};
+const report={uid:'demo',demo:true,generated_at:'2026-01-01',mode:'offline',catalog:uiCatalog,records:uiRecords,coverage:{},context_review:{attempted:0,eligible:2},deduplicated_or_empty:0,errors:[],space_review:{state:'partial',status:'clues_found',coverage:{posts_checked:1,comments_checked:2},observations:[{text:'你这个废物',target:'owner',clues:[{name:'疑似攻击性留言'}],interpretation:'其他人留言',source_url:'https://t.bilibili.com/100?comment_on=1&comment_root_id=1#reply1'}]}};
 const elements=new Map();
 function get(id){if(!elements.has(id))elements.set(id,new Element());return elements.get(id);}
 get('report-data').textContent=JSON.stringify(report);
@@ -39,6 +44,8 @@ assert.equal(get('assignments-topic').textContent,1);
 assert.equal(get('assignments-risk').textContent,2);
 assert.equal(get('legend-topic').children.length,1);
 assert.equal(get('legend-risk').children.length,2);
+assert.equal(get('space-status').textContent,'发现留言线索 · 需核对');
+assert.equal(get('space-evidence').children.length,1);
 get('source').value='video';get('source').listeners.change();
 assert.equal(get('metrics').children[0].children[1].textContent,'1');
 assert.equal(get('assignments-topic').textContent,0);

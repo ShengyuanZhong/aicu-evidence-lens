@@ -1,10 +1,10 @@
-# Aicu Evidence Lens · 发言观察 v2.2.0
+# Aicu Evidence Lens · 发言观察 v2.3.0
 
 这是一个本地运行的公开发言分析工具。输入 UID，采集 Aicu 评论、视频弹幕、直播弹幕；逐条保存原文与来源；标注需要核查的表达并生成交互报告。Windows 用户可以使用发布页的打包程序；从源码运行需要 Python 3.10+，日常使用不需要第三方 Python 包。
 
 ## Windows 桌面版
 
-1. 从 [Releases](https://github.com/ShengyuanZhong/aicu-evidence-lens/releases) 下载当前版本的 `AicuEvidenceLens-v2.2.0-windows-x64.zip`，完整解压后双击其中的 `AicuEvidenceLens.exe`。
+1. 从 [Releases](https://github.com/ShengyuanZhong/aicu-evidence-lens/releases) 下载当前版本的 `AicuEvidenceLens-v2.3.0-windows-x64.zip`，完整解压后双击其中的 `AicuEvidenceLens.exe`。
 2. 在“开始分析”页输入 Bilibili UID，选择报告目录，点击“开始分析”。切换到“导入本地文件”可使用已有 `.json` / `.jsonl` 数据；点击“查看演示”可以先体验合成样本。
 3. 完成后点击“打开报告”。报告与原始记录保存在所选目录下的 `<UID>` 子文件夹。
 
@@ -12,7 +12,7 @@
 
 界面分为“开始分析、模型配置、运行记录”三个页面。表单支持滚动，底部状态和操作按钮固定可见，按钮在禁用和悬停状态下仍显示完整文字。任务在后台运行，日志分批刷新并保留向上滚动的位置；连接测试会阻止重复提交。快捷键：`Ctrl+Enter` 开始分析，`Ctrl+S` 保存配置。
 
-界面可设置每类采集页数、来源核查上限、模型最多审核条数，运行时可停止并保存已取得的数据。报告里有两个独立圆环：**内容分区**仅显示话题，**负面表达筛选**仅显示风险类别。扇区面积、条形长度和百分比按本图标签计数计算；点击标签可联动证据，两个圆环的筛选可叠加。
+界面可设置每类采集页数、来源核查上限、空间动态上限、模型最多审核条数，运行时可停止并保存已取得的数据。报告里有两个独立圆环：**内容分区**仅显示话题，**负面表达筛选**仅显示风险类别。扇区面积、条形长度和百分比按本图标签计数计算；点击标签可联动证据，两个圆环的筛选可叠加。
 
 > 可执行文件未进行代码签名；需要自行核验时可对照发布页的 SHA-256。请保留解压后目录中的 `_internal` 文件夹。
 
@@ -32,7 +32,22 @@ python .\aicu_profile.py 你的UID
 
 结果保存在 `output/<UID>/report.html`。默认每页 100 条，间隔 1 秒，直到接口声明结束；用 `--max-pages 5` 限制每类抓取页数。Aicu 缺失或失败的数据在报告中标明，不算成零风险。
 
-默认会对模糊且优先级较高的候选，最多核查 30 条 Bilibili 来源。使用 `--source-limit 0` 关闭；`--source-limit 50 --source-priority 3` 则提高核查阈值并扩大数量上限。只允许访问明确的 Bilibili 域名，不读取浏览器登录信息。
+默认对风险、公共议题及隐语候选最多核查 30 条 Bilibili 来源。仅有话题线索、没有风险标签时也会核查。使用 `--source-limit 0` 关闭；`--source-limit 50 --source-priority 3` 则提高核查阈值并扩大数量上限。只允许访问明确的 Bilibili 域名，不读取浏览器登录信息。
+
+## v2.3：话题、隐语与空间留言
+
+- 新增军事、性别权益、民族 / 国籍、法律话题；公共议题覆盖外交、民族主义、历史战争及跨国社会指标讨论。仅使用原文、标题、简介、根评论和直接回复对象补充话题，避免无关楼中楼刷屏污染标签。每个话题可展开查看原文证据及来源。
+- “也够”等独立或针对对象的谐音表达、SB / 插字符变体列为疑似辱骂；“这些也够用了”不命中。新增族群 / 国籍歧视性贬损候选，并区别反对歧视、军事技术讨论与伤害鼓动。
+- “吃不上米”等短句先查来源；无法确认的话题单列并可筛选，不计入圆环。模型协议也支持话题、证据来源和待确认话题，升级后旧模型缓存自动失效。
+- Windows 用系统文件关联打开报告，修复部分 Edge 启动方式丢失文件参数的问题。运行记录页提供“复制报告路径”作为备用。
+
+### 空间动态留言检查
+
+界面默认勾选“检查空间动态留言中的家访迹象”；命令行默认 `--space-limit 10`。匿名读取该账号发布的公开动态及其留言：最多 3 页动态、10 条动态、每条 2 页根评论、每个楼层 1 页楼中楼、整体 40 次请求。`--space-limit 0` 关闭，演示始终不联网。
+
+报告新增独立的“空间动态留言 · 家访迹象”区域：显示“家访”用语、“标记 / 恍然大悟”等模糊线索或疑似攻击性留言，并提供原文、回复关系及来源链接。排除账号自己的留言、已确认针对其他访客的回复，以及无法确认对象的楼中楼。线索不加入本人发言统计和两个圆环。模型最终评述仅接收单列的检查统计，不将他人攻击归为账号本人行为。
+
+检查结果分为发现线索、已检查样本内未发现、无法确认和未检查。HTTP 412、登录限制、接口变更、预算耗尽等不会被当成“从未被家访”。“标记”等词存在正常用法，命中仍需核对；公开样本不代表全部历史。
 
 ## 两种审核模式
 
@@ -61,18 +76,19 @@ python .\aicu_profile.py 你的UID --llm-api-key-env MY_LLM_KEY
 无需再次爬取，直接用之前的原始记录：
 
 ```powershell
-python .\aicu_profile.py 你的UID --input-records .\output\你的UID\records.jsonl --source-limit 0
+python .\aicu_profile.py 你的UID --input-records .\output\你的UID\records.jsonl --source-limit 0 --space-limit 0
 ```
 
-也支持 `--input-json data.json`：格式可以是包含 `records` 数组的 JSON、规范化记录数组或旧版 Aicu 接口分页对象（`comment`、`video`、`live`）。完全离线运行时不要配置模型，并设置 `--source-limit 0`。
+也支持 `--input-json data.json`：格式可以是包含 `records` 数组的 JSON、规范化记录数组或旧版 Aicu 接口分页对象（`comment`、`video`、`live`）。完全离线运行时不要配置模型，并设置 `--source-limit 0 --space-limit 0`。
 
 ## 结果文件
 
 | 文件 | 用途 |
 | --- | --- |
 | `report.html` | 可离线打开的交互报告，无 CDN 依赖 |
-| `report.json` | v2 全量记录、标签、状态、来源上下文、审核轨迹和覆盖统计 |
+| `report.json` | schema v3 全量记录、话题证据、待确认话题、来源上下文、审核轨迹、空间留言观察和覆盖统计 |
 | `records.jsonl` | 采集或导入的原始规范化记录，便于重跑 |
+| `space_observations.json` | 独立的空间留言线索、来源、检查范围及失败状态 |
 | `risk_findings.json` | 全部带风险标签的记录，包含待核查和模型判断 |
 | `llm_requests.jsonl` | 按批导出的模型请求，不含 API Key；无模型时也生成 |
 | `llm_review.txt` | 模型评述；未生成或失败时明确标注 |
@@ -93,15 +109,15 @@ python -m pip install "pyinstaller>=6.22,<7"
 .\build_windows.ps1
 ```
 
-生成的文件是 `dist/AicuEvidenceLens-v2.2.0-windows-x64.zip`。每次构建使用独立暂存目录，避免已打开的程序锁定旧构建产物。打包脚本将报告的本地 CSS、JavaScript 和合成演示数据一并包含；构建产物与用户报告已在 `.gitignore` 中排除。
+生成的文件是 `dist/AicuEvidenceLens-v2.3.0-windows-x64.zip`。每次构建使用独立暂存目录，避免已打开的程序锁定旧构建产物。打包脚本将报告的本地 CSS、JavaScript 和合成演示数据一并包含；构建产物与用户报告已在 `.gitignore` 中排除。
 
 ## 项目结构与验证
 
-`aicu/collector.py` 负责采集；`detection.py` 负责离线召回；`semantic.py` 负责模型协议及验证；`context.py` 负责来源；`pipeline.py` 串起流程；`gui.py` 是桌面界面；`report.py` 与 `assets/` 生成交互报告。
+`aicu/collector.py` 负责采集；`detection.py` 负责离线召回；`semantic.py` 负责模型协议及验证；`context.py` 负责来源；`topics.py` 负责话题证据；`space.py` 负责空间留言；`pipeline.py` 串起流程；`gui.py` 是桌面界面；`report.py` 与 `assets/` 生成交互报告。
 
 ```powershell
 python -m unittest -v
 node tests/dashboard.test.cjs
 ```
 
-测试范围见 [tests/README.md](tests/README.md)。来源页面可能被删除、限流或需要登录；抓取失败时保留失败状态，不会把记录判成无风险。抓取或模型失败时退出码为 2，已有数据和可生成的报告仍保留。
+测试范围见 [tests/README.md](tests/README.md)。来源页面可能被删除、限流或需要登录；抓取失败时保留失败状态，不会把记录判成无风险。采集、空间请求或模型失败时退出码为 2，已有数据和可生成的报告仍保留。
