@@ -20,6 +20,9 @@ assert.equal(spaceStatus({state:'partial',status:'clues_found'}),'发现留言�
 const pendingRecords=[{...records[0],topic_candidates:[{label:'politics'}]},records[1]];
 assert.equal(filterRecords(pendingRecords,{source:'all',status:'all',topicState:'pending'},catalog).length,1);
 assert.equal(aggregate(pendingRecords,catalog,'topic').total,1);
+const meaningRecords=[{...records[0],assessment:{...records[0].assessment,risk_labels:[],context_candidates:[{label:'sexualized',quote:'synthetic'}]}},records[1]];
+assert.equal(filterRecords(meaningRecords,{source:'all',status:'meaning_pending'},catalog).length,1);
+assert.equal(aggregate(meaningRecords,catalog,'risk').total,1);
 
 // Exercise the UI controller with a minimal DOM double (no browser/network).
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');

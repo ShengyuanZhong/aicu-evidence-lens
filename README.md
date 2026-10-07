@@ -1,10 +1,10 @@
-# Aicu Evidence Lens · 发言观察 v2.3.0
+# Aicu Evidence Lens · 发言观察 v2.4.0
 
 这是一个本地运行的公开发言分析工具。输入 UID，采集 Aicu 评论、视频弹幕、直播弹幕；逐条保存原文与来源；标注需要核查的表达并生成交互报告。Windows 用户可以使用发布页的打包程序；从源码运行需要 Python 3.10+，日常使用不需要第三方 Python 包。
 
 ## Windows 桌面版
 
-1. 从 [Releases](https://github.com/ShengyuanZhong/aicu-evidence-lens/releases) 下载当前版本的 `AicuEvidenceLens-v2.3.0-windows-x64.zip`，完整解压后双击其中的 `AicuEvidenceLens.exe`。
+1. 从 [Releases](https://github.com/ShengyuanZhong/aicu-evidence-lens/releases) 下载当前版本的 `AicuEvidenceLens-v2.4.0-windows-x64.zip`，完整解压后双击其中的 `AicuEvidenceLens.exe`。
 2. 在“开始分析”页输入 Bilibili UID，选择报告目录，点击“开始分析”。切换到“导入本地文件”可使用已有 `.json` / `.jsonl` 数据；点击“查看演示”可以先体验合成样本。
 3. 完成后点击“打开报告”。报告与原始记录保存在所选目录下的 `<UID>` 子文件夹。
 
@@ -33,6 +33,14 @@ python .\aicu_profile.py 你的UID
 结果保存在 `output/<UID>/report.html`。默认每页 100 条，间隔 1 秒，直到接口声明结束；用 `--max-pages 5` 限制每类抓取页数。Aicu 缺失或失败的数据在报告中标明，不算成零风险。
 
 默认对风险、公共议题及隐语候选最多核查 30 条 Bilibili 来源。仅有话题线索、没有风险标签时也会核查。使用 `--source-limit 0` 关闭；`--source-limit 50 --source-priority 3` 则提高核查阈值并扩大数量上限。只允许访问明确的 Bilibili 域名，不读取浏览器登录信息。
+
+## v2.4：隐晦性化表达与局部上下文
+
+- 增加称呼、请求和对象的组合规则，召回“姐姐我想打”“帮我打个✈️吧”“拍完可以干吗”以及部分谐音、表情替代词；保留原文和命中原因。不把“打 / 奶 / 车”等单字直接当成风险。
+- 对“我要喝奶”“姐姐我出来了”等多义短句，提供“含义待确认的短句”筛选；没有进一步证据时不进入风险圆环。游戏、饮食、驾驶、摄影工作、医学和引用劝阻用法有对应反例检查。
+- 同一账号、同一直播间前后 3 分钟内最多取 4 条不同文本作为辅助上下文。报告可展开查看依据；普通相邻发言和重复同一句话不会直接确认隐语含义。不开启模型也可使用这部分本地上下文。
+- 支持图文动态评论（type 11）的来源查询。无法取得动态页面地址时链接到 Bilibili 的原始评论接口，不拼造页面地址。来源预算优先用于评论和视频；当前直播间主页不能还原历史弹幕语境。
+- 补充部分表情辱骂和针对他人的贬损句式。所有离线结果仍是待核查候选；频次表示发言数量，不代表“性压抑程度”、实际性行为或人格诊断。
 
 ## v2.3：话题、隐语与空间留言
 
@@ -69,7 +77,7 @@ python .\aicu_profile.py 你的UID --llm-api-key-env MY_LLM_KEY
 
 本机兼容服务可使用 `http://127.0.0.1:端口/v1/chat/completions`，不强制要求密钥。也可以直接使用 `--llm-url`、`--llm-model`，不设置环境变量。
 
-配置模型后会发送发言文本及取得的来源上下文给该服务。默认全量逐条审核；`--llm-record-limit 200` 限制本次最多审核前 200 条，未覆盖记录仍保持未审核或规则候选状态。`--llm-batch-size 12` 设置批次大小。`--llm-evidence-limit 80` 只限制最终评述中的证据数量。有效模型结果有本地缓存，文本、模型或提示词变化时会重新审核。
+配置模型后会发送发言文本、邻近本人发言及取得的来源上下文给该服务。默认全量逐条审核；`--llm-record-limit 200` 限制本次最多审核前 200 条，未覆盖记录仍保持未审核或规则候选状态。`--llm-batch-size 12` 设置批次大小。`--llm-evidence-limit 80` 只限制最终评述中的证据数量。有效模型结果有本地缓存，文本、上下文、模型或提示词变化时会重新审核。
 
 ## 重用已有数据
 
@@ -109,11 +117,11 @@ python -m pip install "pyinstaller>=6.22,<7"
 .\build_windows.ps1
 ```
 
-生成的文件是 `dist/AicuEvidenceLens-v2.3.0-windows-x64.zip`。每次构建使用独立暂存目录，避免已打开的程序锁定旧构建产物。打包脚本将报告的本地 CSS、JavaScript 和合成演示数据一并包含；构建产物与用户报告已在 `.gitignore` 中排除。
+生成的文件是 `dist/AicuEvidenceLens-v2.4.0-windows-x64.zip`。每次构建使用独立暂存目录，避免已打开的程序锁定旧构建产物。打包脚本将报告的本地 CSS、JavaScript 和合成演示数据一并包含；构建产物与用户报告已在 `.gitignore` 中排除。
 
 ## 项目结构与验证
 
-`aicu/collector.py` 负责采集；`detection.py` 负责离线召回；`semantic.py` 负责模型协议及验证；`context.py` 负责来源；`topics.py` 负责话题证据；`space.py` 负责空间留言；`pipeline.py` 串起流程；`gui.py` 是桌面界面；`report.py` 与 `assets/` 生成交互报告。
+`aicu/collector.py` 负责采集；`detection.py` 与 `expressions.py` 负责离线召回；`local_context.py` 关联邻近本人弹幕；`semantic.py` 负责模型协议及验证；`context.py` 负责来源；`topics.py` 负责话题证据；`space.py` 负责空间留言；`pipeline.py` 串起流程；`gui.py` 是桌面界面；`report.py` 与 `assets/` 生成交互报告。
 
 ```powershell
 python -m unittest -v

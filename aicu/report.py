@@ -15,7 +15,7 @@ def render_report(report):
 <main><section id="notice" class="notice"></section><section class="metrics" id="metrics"></section>
 <section class="panel controls"><div class="section-heading"><h2>探索样本</h2><button id="reset" class="quiet">重置筛选</button></div><div class="filter-grid">
 <label>发言来源<select id="source"><option value="all">全部来源</option><option value="comment">评论</option><option value="video">视频弹幕</option><option value="live">直播弹幕</option></select></label>
-<label>审核状态<select id="status"><option value="all">全部状态</option><option value="suspected">待核查</option><option value="risk">模型判为风险</option><option value="no_risk_observed">模型未发现风险</option><option value="unreviewed">未作语义审核</option></select></label>
+<label>审核状态<select id="status"><option value="all">全部状态</option><option value="suspected">待核查</option><option value="meaning_pending">含义待确认的短句</option><option value="risk">模型判为风险</option><option value="no_risk_observed">模型未发现风险</option><option value="unreviewed">未作语义审核</option></select></label>
 <label>话题证据<select id="topicState"><option value="all">全部话题状态</option><option value="pending">有待确认话题</option><option value="labeled">已有话题标签</option><option value="unlabeled">未识别话题</option></select></label>
 <label>搜索原文<input id="search" type="search" placeholder="输入关键词"></label>
 <label>起始日期<input id="from" type="date"></label><label>结束日期<input id="to" type="date"></label></div>

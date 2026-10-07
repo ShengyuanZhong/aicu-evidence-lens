@@ -13,7 +13,7 @@
     return {total,labels:[...counts].map(([id,count])=>({id,count,share:total?count/total:0,coverage:records.length?count/records.length:0})).sort((a,b)=>b.count-a.count||a.id.localeCompare(b.id))};
   }
   function filterRecords(records, filters, catalog) {
-    return records.filter(r=>(filters.source==="all"||r.type===filters.source)&&(filters.status==="all"||r.assessment.status===filters.status)&&(!filters.search||r.text.toLocaleLowerCase().includes(filters.search.toLocaleLowerCase()))&&(!filters.from||(r.time&&r.time.slice(0,10)>=filters.from))&&(!filters.to||(r.time&&r.time.slice(0,10)<=filters.to))&&(!filters.topicTag||tags(r,catalog,"topic").includes(filters.topicTag))&&(!filters.riskTag||tags(r,catalog,"risk").includes(filters.riskTag))&&(!filters.topicState||filters.topicState==="all"||(filters.topicState==="pending"&&(r.topic_candidates||[]).length)||(filters.topicState==="labeled"&&(r.topic_labels||[]).length)||(filters.topicState==="unlabeled"&&!(r.topic_labels||[]).length)));
+    return records.filter(r=>(filters.source==="all"||r.type===filters.source)&&(filters.status==="all"||r.assessment.status===filters.status||(filters.status==="meaning_pending"&&(r.assessment.context_candidates||[]).length))&&(!filters.search||r.text.toLocaleLowerCase().includes(filters.search.toLocaleLowerCase()))&&(!filters.from||(r.time&&r.time.slice(0,10)>=filters.from))&&(!filters.to||(r.time&&r.time.slice(0,10)<=filters.to))&&(!filters.topicTag||tags(r,catalog,"topic").includes(filters.topicTag))&&(!filters.riskTag||tags(r,catalog,"risk").includes(filters.riskTag))&&(!filters.topicState||filters.topicState==="all"||(filters.topicState==="pending"&&(r.topic_candidates||[]).length)||(filters.topicState==="labeled"&&(r.topic_labels||[]).length)||(filters.topicState==="unlabeled"&&!(r.topic_labels||[]).length)));
   }
   function spaceStatus(review={}) {
     if(review.status==="clues_found")return "发现留言线索 · 需核对";
@@ -34,7 +34,7 @@
   let page=0,timer=null,current=[];
   $("subtitle").textContent=(report.demo?"合成演示样本 · 不对应真实账号":"UID "+report.uid)+" · "+report.records.length+" 条记录 · "+report.generated_at.slice(0,10);
   $("mode").textContent=report.mode==="offline"?"离线检索模式":"语义审核模式";
-  $("notice").textContent=report.mode==="offline"?"尚未接入语义模型。带标签的记录是待核查线索，未命中记录仍是未审核；表情或情绪词不会生成友好分。来源核查会补充语境，但不会自动消除风险标签。":"模型逐条分析原文，遇到高疑点记录补充来源后复核。请结合证据阅读模型结果；审核失败与未覆盖记录保持未审核状态。";
+  $("notice").textContent=report.mode==="offline"?"尚未接入语义模型。带标签的记录是待核查线索，未命中记录仍是未审核；表情或情绪词不会生成友好分。来源可帮助重新判断弱隐语，变更保留依据；含义待确认的短句不计入风险圆环。":"模型逐条分析原文，遇到高疑点记录补充来源后复核。请结合证据阅读模型结果；审核失败与未覆盖记录保持未审核状态。";
   $("summary").textContent=report.summary||(report.summary_error?"模型评述失败："+report.summary_error:"尚未生成模型评述。逐条审核请求已导出，可配置模型后重跑已有记录。");
   for(const [k,s] of Object.entries(report.coverage||{})) $("coverage").append(node("div",(TYPES[k]||k)+"："+(s.count??0)+" 条 · "+s.state+(s.error?" · "+s.error:"")));
   $("coverage").append(node("div","来源核查："+report.context_review.attempted+" / "+report.context_review.eligible+" 条候选；已去重或排除空记录 "+report.deduplicated_or_empty+" 条。"));
@@ -75,11 +75,15 @@
       const head=node("div",undefined,"record-head");head.append(node("span",(TYPES[r.type]||r.type)+" · "+(r.time?r.time.replace("T"," "):"时间未知")+" · "+r.id),node("span",STATES[a.status]||a.status,"status "+a.status));card.append(head,node("p",r.text,"record-text"));
       const ts=node("div",undefined,"tags");for(const k of tags(r,catalog)){const tag=node("span",catalog[k].name,"tag "+catalog[k].kind);ts.append(tag);}card.append(ts,node("p",a.reason,"reason"));
       for(const e of r.topic_candidates||[])card.append(node("p","待确认话题："+(catalog[e.label]?.name||e.label)+" · "+e.reason,"pending-topic"));
-      if(r.source_url){const link=node("a","打开 Bilibili 原始来源 ↗");link.href=r.source_url;link.target="_blank";link.rel="noopener noreferrer";card.append(link);}
+      for(const e of a.context_candidates||[])card.append(node("p","含义待确认："+e.reason,"pending-topic"));
+      if(r.source_url){const link=node("a",r.source_url.startsWith("https://api.bilibili.com/")?"查看 Bilibili 原始评论数据 ↗":"打开 Bilibili 原始来源 ↗");link.href=r.source_url;link.target="_blank";link.rel="noopener noreferrer";card.append(link);}
       const d=node("details");d.append(node("summary","判断依据与来源上下文"));
-      d.append(node("p","判断对象："+a.target+" · 方法："+a.method));for(const e of a.evidence||[])d.append(node("blockquote",e.quote),node("p",e.reason));
+      d.append(node("p","判断对象："+a.target+" · 方法："+a.method));for(const e of a.evidence||[]){d.append(node("blockquote",e.quote),node("p",e.reason));if(e.context_quote)d.append(node("p","辅助语境 · "+e.context_source),node("blockquote",e.context_quote));}
+      for(const e of a.literal_resolutions||[])d.append(node("p",e.reason),node("blockquote",e.context_quote));
       for(const e of r.topic_evidence||[])d.append(node("p","话题依据 · "+(catalog[e.label]?.name||e.label)+" · "+(origins[e.source]||e.source)),node("blockquote",e.quote),node("p",e.reason,"small"));
       const ctx=r.source_context||{};d.append(node("p","来源状态："+(ctx.state||"not_requested")+(ctx.target_found?" · 已在来源中匹配评论 ID 与账号":"")));
+      if(ctx.reason)d.append(node("p",ctx.reason));
+      for(const n of r.nearby_author||[])d.append(node("p","同一房间邻近本人发言 · "+n.time+" · "+n.id),node("blockquote",n.text));
       if(ctx.title)d.append(node("p","标题："+ctx.title));if(ctx.description)d.append(node("p","简介："+ctx.description));
       for(const c of ctx.conversation||[])d.append(node("blockquote",(c.role==="queried_author"?"查询账号：":"其他作者 / 未确认归属：")+c.text));
       for(const err of [...(ctx.errors||[]),...(r.errors||[])])d.append(node("p",err));

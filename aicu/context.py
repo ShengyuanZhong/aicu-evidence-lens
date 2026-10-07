@@ -41,6 +41,12 @@ def source_link(record):
         url = "https://t.bilibili.com/" + ref
     elif kind == "comment" and type_id == "12":
         url = "https://www.bilibili.com/read/cv" + ref
+    elif kind == "comment" and type_id == "11":
+        rpid = str(raw.get("rpid") or "")
+        root = str((raw.get("parent") or {}).get("rootid") or rpid)
+        if rpid.isdigit() and root.isdigit():
+            return "https://api.bilibili.com/x/v2/reply/reply?" + urllib.parse.urlencode({"type": 11, "oid": ref, "root": root, "pn": 1, "ps": 20})
+        return ""
     else:
         return ""
     if kind == "comment":
@@ -69,9 +75,9 @@ class PageMetadata(HTMLParser):
         if tag == "meta":
             key = attrs.get("property") or attrs.get("name")
             if key == "og:title":
-                self.title = attrs.get("content", "")[:300]
+                self.title = (attrs.get("content") or "")[:300]
             if key in ("description", "og:description"):
-                self.description = attrs.get("content", "")[:1500]
+                self.description = (attrs.get("content") or "")[:1500]
 
     def handle_endtag(self, tag):
         if tag == "title":
@@ -123,6 +129,9 @@ class ContextFetcher:
 
     def fetch(self, record):
         result = {"state": "unavailable", "url": record.get("source_url") or source_link(record), "title": "", "description": "", "area": "", "conversation": [], "target_found": False, "errors": [], "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(), "pages": []}
+        if record["type"] == "live":
+            result.update(historical_unavailable=True, reason="当前直播间主页不能还原历史弹幕语境；仅使用采集时提示和同一房间的邻近本人发言。")
+            return result
         if not result["url"]:
             result["errors"].append("没有可确认的来源链接")
             return result
@@ -132,7 +141,8 @@ class ContextFetcher:
         # Visit the original page: metadata only. JS-only content stays unavailable.
         try:
             metadata = PageMetadata()
-            metadata.feed(self.read(result["url"], as_json=False))
+            if type_id != "11":
+                metadata.feed(self.read(result["url"], as_json=False))
             if metadata.title and not re.search(r"验证|拦截|Access Denied|验证码|安全检查", metadata.title, re.I):
                 result.update(title=metadata.title, description=metadata.description)
                 result["pages"].append(result["url"])
@@ -148,7 +158,7 @@ class ContextFetcher:
                 result["pages"].append(url)
             except (RuntimeError, ValueError, OSError) as exc:
                 result["errors"].append("视频元信息：" + str(exc)[:160])
-        if record["type"] == "comment" and type_id in {"1", "12", "17"}:
+        if record["type"] == "comment" and type_id in {"1", "11", "12", "17"}:
             rpid = str(raw.get("rpid") or "")
             root = str((raw.get("parent") or {}).get("rootid") or rpid)
             parent_id = str((raw.get("parent") or {}).get("parentid") or root)

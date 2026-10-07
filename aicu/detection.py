@@ -2,10 +2,11 @@
 import re
 from .taxonomy import RISK_LABELS
 from .topics import normalize_text, without_mentions, topic_analysis
+from .expressions import sexual_expressions
 
-RULE_VERSION = "rules-2.3"
+RULE_VERSION = "rules-2.4"
 RULES = {
-    "insult": [r"傻[\s*·._-]*[逼b比杯]", r"煞[\s*·._-]*笔|傻波一|沙币", r"脑残|弱智|废物|狗东西", r"你.{0,5}垃圾", r"滚[蛋开]|死[妈全]家"],
+    "insult": [r"傻[\s*·._-]*[逼b比杯]", r"煞[\s*·._-]*笔|傻波一|沙币", r"脑残|弱智|废物|狗东西", r"你.{0,5}垃圾", r"滚[蛋开]|死[妈全]家", r"(?:你|她|他|队友|有些队友).{0,8}(?:没脑子|脑子不行|不带脑子|是精神病|垃圾)", r"(?:逗|当)傻子玩", r"(?:都是|你(?:就)?是|你个|纯)\s*🦈[\ufe0f\s]*🖊", r"(?:纯|你是|你个)[舰贱][\s\ufe0f]*[🖊笔bB]"],
     "sexual_harassment": [r"(?:妈妈|母亲|你妈|她妈).{0,8}(?:处女|第一次|身体).{0,10}(?:我|占有)", r"(?:想|要|让).*?(?:睡你|上你|操你|摸你)", r"给我看.{0,5}(?:胸|内裤|身体)", r"你的.{0,5}(?:处女|第一次).{0,8}(?:我|要了)"],
     "sexualized": [r"处女(?!座|作|航).{0,10}(?:我的|属于我|是我)", r"(?:想睡|想上)[你他她]", r"(?:胸|屁股).{0,3}(?:大|翘|摸)", r"约炮|精液|肉便器"],
     "threat": [r"弄死你|杀了你|打死你", r"找到你.{0,8}(?:打|杀)"],
@@ -25,7 +26,7 @@ def topic_tags(text, context=""):
     return topic_analysis(text, context)["labels"]
 
 
-def baseline(text):
+def baseline(text, context="", source_context=None, nearby=None):
     evidence = []
     quoted_report = bool(re.search(r"[“\"].+[”\"].{0,15}(?:不对|不合适|不能|不应该|反对)", text))
     for clause in re.split(r"[，,。！!？?；;\n]", text):
@@ -48,13 +49,15 @@ def baseline(text):
         evidence.append({"label": "insult", "quote": text, "reason": "独立或指向他人的 SB 缩写，疑似辱骂；需结合语境核查。"})
     if re.fullmatch(r"(?:(?:你|你个|这人|楼上)(?:就是|是个|是)?)?(?:野狗|畜生|滚)", brief) or re.fullmatch(r"(?:你|你个|这人|楼上)(?:就是|是个|是)?(?:出生|初生)", brief):
         evidence.append({"label": "insult", "quote": text, "reason": "独立评价或针对对象的贬损 / 谐音用语线索；需排除字面与引用语境。"})
+    expressions = sexual_expressions(text, context, source_context, nearby)
+    evidence.extend(expressions["evidence"])
     labels = list(dict.fromkeys(e["label"] for e in evidence))
     if quoted_report:
         # Retain the evidence but put the interpretation explicitly in dispute.
         priority = 2 if labels else 0
     else:
-        priority = max((RISK_LABELS[k]["severity"] for k in labels), default=0)
+        priority = max((RISK_LABELS[k]["severity"] for k in labels), default=2 if expressions["candidates"] else 0)
     return {"status": "suspected" if labels else "unreviewed", "risk_labels": labels,
-            "priority": priority, "needs_context": bool(labels), "target": "待确认",
-            "evidence": evidence, "reason": "离线规则候选，尚未完成语义审核。" if labels else "未命中离线规则；不等于无风险。",
-            "method": RULE_VERSION, "model_checked": False}
+            "priority": priority, "needs_context": bool(labels or expressions["candidates"]), "target": "待确认",
+            "evidence": evidence, "reason": "离线规则候选，尚未完成语义审核。" if labels else "发现多义短句；含义待确认，暂不计入风险标签。" if expressions["candidates"] else "未命中离线风险规则；不等于无风险。",
+            "method": RULE_VERSION, "model_checked": False, "context_candidates": expressions["candidates"], "literal_resolutions": expressions["resolutions"]}
